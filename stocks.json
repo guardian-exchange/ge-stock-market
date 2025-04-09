@@ -1,0 +1,6 @@
+{
+    "ACME": {"price": 100.0, "volatility": 0.02},
+    "GLOBEX": {"price": 150.0, "volatility": 0.03},
+    "INITECH": {"price": 200.0, "volatility": 0.01},
+    "Hooli": {"price": 90.0, "volatility": 0.025}
+}

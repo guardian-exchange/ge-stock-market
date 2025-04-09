@@ -1,6 +1,5 @@
-flask
+websockets
 matplotlib
-requests
 # Using tkinter as matplotlib backend
 tk
 # Python-lsp

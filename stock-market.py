@@ -1,49 +1,53 @@
-from flask import Flask, jsonify, request
-import threading
-import time
+import asyncio
+import websockets
+import json
 import random
+import os
 
-app = Flask(__name__)
-
-# Set a fixed seed for reproducibility
+# Seed for testing (you can make it random in prod)
 random.seed(42)
 
-# Multiple stocks
-stock_data = {
-    "ACME": {"price": 100.0, "volatility": 0.02},
-    "GLOBEX": {"price": 150.0, "volatility": 0.03},
-    "INITECH": {"price": 200.0, "volatility": 0.01},
-    "Hooli": {"price": 90.0, "volatility": 0.025}
-}
+with open("stocks.json", "r") as f:
+    stock_data = json.load(f)
 
-lock = threading.Lock()
+clients = set()
+
+# Environment variables
+WS_HOST = os.environ.get("HOST", "localhost")
+WS_PORT = os.environ.get("PORT", "8765")
 
 
-def simulate_stock_prices():
+async def simulate_prices():
     while True:
-        time.sleep(0.5)
-        with lock:
-            for symbol, data in stock_data.items():
-                change_percent = random.gauss(0.0, data["volatility"])
-                data["price"] *= (1 + change_percent)
-                data["price"] = round(data["price"], 2)
+        await asyncio.sleep(0.5)
+        for symbol, data in stock_data.items():
+            delta = random.gauss(0, data["volatility"])
+            data["price"] *= (1 + delta)
+            data["price"] = round(data["price"], 2)
+
+        # Broadcast update
+        message = json.dumps({s: d["price"] for s, d in stock_data.items()})
+        for ws in clients.copy():
+            try:
+                await ws.send(message)
+            except:
+                clients.remove(ws)
 
 
-@app.route('/price', methods=['GET'])
-def get_price():
-    symbol = request.args.get('symbol')
-    with lock:
-        if symbol:
-            if symbol in stock_data:
-                return jsonify({symbol: stock_data[symbol]["price"]})
-            else:
-                return jsonify({"error": f"Symbol '{symbol}' not found"}), 404
-        else:
-            return jsonify({s: data["price"] for s, data in stock_data.items()})
+async def handler(ws):
+    clients.add(ws)
+    try:
+        # Send initial snapshot
+        await ws.send(json.dumps({s: d["price"] for s, d in stock_data.items()}))
+        async for _ in ws:  # keep connection open
+            pass
+    finally:
+        clients.remove(ws)
 
 
-if __name__ == '__main__':
-    thread = threading.Thread(target=simulate_stock_prices, daemon=True)
-    thread.start()
+async def main():
+    async with websockets.serve(handler, WS_HOST, WS_PORT):
+        await simulate_prices()
 
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    asyncio.run(main())

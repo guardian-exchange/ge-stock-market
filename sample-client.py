@@ -1,63 +1,72 @@
-from collections import deque
-import matplotlib.animation as animation
+import asyncio
+import json
 import matplotlib.pyplot as plt
-import requests
+import matplotlib.animation as animation
+from collections import deque
 import matplotlib
+import websockets
+import threading
+import os
+
 matplotlib.use("TkAgg")
 
-# Stock symbols to monitor
+# Setup
 symbols = ["ACME", "GLOBEX", "INITECH", "Hooli"]
-
-# History length for each stock
 HISTORY_LENGTH = 100
-
-# Store price history for each symbol
 price_history = {symbol: deque([100.0], maxlen=HISTORY_LENGTH)
                  for symbol in symbols}
 
-# Setup 2x2 subplots
+# Plot setup
 fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 axes = axes.flatten()
-
-# Lines for each subplot
 lines = {}
+
+# Environment variables
+WS_HOST = os.environ.get("HOST", "localhost")
+WS_PORT = os.environ.get("PORT", "8765")
 
 for i, symbol in enumerate(symbols):
     ax = axes[i]
     ax.set_title(symbol)
-    ax.set_xticks([])  # remove x-axis ticks
-    ax.set_yticks([])  # remove y-axis ticks
-
-    # Initialize a blank line
+    ax.set_xticks([])
+    ax.set_yticks([])
     line, = ax.plot([], [], lw=2)
     lines[symbol] = line
 
 
-def update(frame):
+def update(_):
+    for symbol, line in lines.items():
+        y = list(price_history[symbol])
+        x = list(range(len(y)))
+        line.set_data(x, y)
+        ax = axes[symbols.index(symbol)]
+        ax.set_xlim(0, HISTORY_LENGTH)
+        ax.set_ylim(min(y), max(y) if max(y) != min(y) else min(y) + 1)
+
+
+async def listen():
+    uri = f"ws://{WS_HOST}:{WS_PORT}"
     try:
-        # Fetch all stock prices at once
-        response = requests.get("http://localhost:5000/price")
-        prices = response.json()
-
-        for symbol in symbols:
-            price = prices.get(symbol)
-            if price is not None:
-                price_history[symbol].append(price)
-                y = list(price_history[symbol])
-                x = list(range(len(y)))
-
-                line = lines[symbol]
-                line.set_data(x, y)
-                axes[symbols.index(symbol)].set_xlim(0, len(y))
-                axes[symbols.index(symbol)].set_ylim(min(y), max(y))
-
+        async with websockets.connect(uri) as websocket:
+            async for message in websocket:
+                data = json.loads(message)
+                for symbol in symbols:
+                    price = data.get(symbol)
+                    if price is not None:
+                        price_history[symbol].append(price)
     except Exception as e:
-        print("Error fetching data:", e)
+        print(f"WebSocket error: {e}")
 
 
-ani = animation.FuncAnimation(
-    fig, update, interval=500, blit=False, cache_frame_data=False
-)
+def start_async_loop():
+    asyncio.run(listen())
+
+
+# Start the asyncio event loop in a separate thread
+threading.Thread(target=start_async_loop, daemon=True).start()
+
+# Start the plot animation
+ani = animation.FuncAnimation(fig, update, interval=500, blit=False)
 
 plt.tight_layout()
 plt.show()

@@ -1,31 +1,26 @@
-> Simulates multiple stock prices in real time and serves them over a simple Flask API.
+> Simulates multiple stock prices in real time and streams them via **WebSocket** to connected clients.
 ---
 
 ## Getting Started
+
 ```bash
 # Install required dependencies
 pip install -r requirements.txt
 
-# Run the stock market server on port :5000
+# Run the stock market server (runs on ws://localhost:8765 by default)
 python stock-market.py &
 
 # Run the sample client to view the live plot (2x2 grid for all stocks)
 python sample-client.py
 ```
 
-## API Reference
-### `GET /price`
-Returns the current stock prices for all available stocks.
+## WebSocket API
+The server streams stock price updates to all connected WebSocket clients in real time (roughly every 0.5 seconds).
 
-#### Optional Query Parameter:
-- `symbol` (string): If provided, returns data for the specified stock only.
+### Message Format
+Each message sent over the WebSocket connection is a JSON object with the current prices of all available stocks.
 
-#### Example: Get all stocks:
-```bash
-curl http://localhost:5000/price
-```
-
-**Response:**
+### Example Payload:
 ```json
 {
   "ACME": 98.72,
@@ -35,22 +30,17 @@ curl http://localhost:5000/price
 }
 ```
 
-#### Example: Get single stock
-```bash
-curl http://localhost:5000/price?symbol=ACME
-```
+- Clients must connect to `ws://<host>:<port>` (default: `ws://localhost:8765`) and listen for messages.
+- No special events or namespaces; just raw WebSocket text messages.
 
-**Response:**
-```json
-{
-  "ACME": 98.72
-}
-```
+## Client Visualization
+The included sample client (`sample-client.py`) connects to the WebSocket server and visualizes all stocks in a **2x2 grid using `matplotlib`**.
+
+- **X/Y axes**: Simplified for readability (ticks removed).
+- **Subplots**: One per stock, with a live updating line.
+- **Animation**: Driven by `matplotlib.animation.FuncAnimation`.
 
 ## TODOs
+- [ ] **Restrict Access to Server Internally:** Use a firewall or reverse proxy (e.g., NGINX) to expose the WebSocket server only to internal frontend/backend services.
 
-- [ ] **Add a firewall**
-  Restrict access to the `/price` endpoint such that only internal services (like the django-backend or sample-client) can query the server.
-
-- [ ] **Randomize the initialization seed in production**
-  Currently, a fixed seed (`random.seed(42)`) is used to ensure reproducibility. Replace it with a random seed (or time-based one) in production to make price simulation unpredictable.
+- [ ] **Randomize Simulation in Production:** Currently uses `random.seed(42)` for deterministic price generation. Replace this with a random or time-based seed for real deployments.
