@@ -1,0 +1,7 @@
+flask
+matplotlib
+requests
+# Using tkinter as matplotlib backend
+tk
+# Python-lsp
+python-lsp-server[all]
