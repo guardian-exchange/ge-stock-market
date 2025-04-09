@@ -22,8 +22,8 @@ axes = axes.flatten()
 lines = {}
 
 # Environment variables
-WS_HOST = os.environ.get("HOST", "localhost")
-WS_PORT = os.environ.get("PORT", "8765")
+WS_HOST = os.environ.get("SM_HOST", "localhost")
+WS_PORT = os.environ.get("SM_PORT", "8765")
 
 for i, symbol in enumerate(symbols):
     ax = axes[i]

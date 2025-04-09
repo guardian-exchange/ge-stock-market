@@ -13,8 +13,8 @@ with open("stocks.json", "r") as f:
 clients = set()
 
 # Environment variables
-WS_HOST = os.environ.get("HOST", "localhost")
-WS_PORT = os.environ.get("PORT", "8765")
+WS_HOST = os.environ.get("SM_HOST", "localhost")
+WS_PORT = os.environ.get("SM_PORT", "8765")
 
 
 async def simulate_prices():
