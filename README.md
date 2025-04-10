@@ -44,9 +44,3 @@ The included sample client (`sample-client.py`) connects to the WebSocket server
 - **X/Y axes**: Simplified for readability (ticks removed).
 - **Subplots**: One per stock, with a live updating line.
 - **Animation**: Driven by `matplotlib.animation.FuncAnimation`.
-
-## TODOs
-
-- [ ] **Restrict Access to Server Internally:** Use a firewall or reverse proxy (e.g., NGINX) to expose the WebSocket server only to internal frontend/backend services.
-
-- [ ] **Randomize Simulation in Production:** Currently uses `random.seed(42)` for deterministic price generation. Replace this with a random or time-based seed for real deployments.

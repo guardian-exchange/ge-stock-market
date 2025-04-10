@@ -5,9 +5,6 @@ import random
 import os
 import time
 
-# Seed for testing (you can make it random in prod)
-random.seed(42)
-
 with open("stocks.json", "r") as f:
     stock_data = json.load(f)
 
@@ -16,6 +13,9 @@ clients = set()
 # Environment variables
 WS_HOST = os.environ.get("SM_HOST", "localhost")
 WS_PORT = os.environ.get("SM_PORT", "8765")
+SEED = os.environ.get("SM_SEED", 42)
+
+random.seed(SEED)
 
 epoch_time = lambda: int(time.time() * 1000)
 
