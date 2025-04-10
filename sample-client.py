@@ -13,8 +13,7 @@ matplotlib.use("TkAgg")
 # Setup
 symbols = ["ACME", "GLOBEX", "INITECH", "Hooli"]
 HISTORY_LENGTH = 100
-price_history = {symbol: deque([100.0], maxlen=HISTORY_LENGTH)
-                 for symbol in symbols}
+price_history = {symbol: deque([100.0], maxlen=HISTORY_LENGTH) for symbol in symbols}
 
 # Plot setup
 fig, axes = plt.subplots(2, 2, figsize=(10, 8))
@@ -30,7 +29,7 @@ for i, symbol in enumerate(symbols):
     ax.set_title(symbol)
     ax.set_xticks([])
     ax.set_yticks([])
-    line, = ax.plot([], [], lw=2)
+    (line,) = ax.plot([], [], lw=2)
     lines[symbol] = line
 
 
@@ -51,7 +50,7 @@ async def listen():
             async for message in websocket:
                 data = json.loads(message)
                 for symbol in symbols:
-                    price = data.get(symbol)
+                    price = data.get(symbol)["price"]
                     if price is not None:
                         price_history[symbol].append(price)
     except Exception as e:
